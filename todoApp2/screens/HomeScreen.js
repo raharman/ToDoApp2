@@ -18,7 +18,6 @@ import { useNavigation } from "@react-navigation/native";
 import {
   Fab,
   Icon,
-  Box,
   Center,
   NativeBaseProvider,
   Modal,

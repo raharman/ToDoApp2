@@ -12,10 +12,10 @@ import {
   collection,
   getDocs,
   doc,
-  onSnapshot,
   setDoc,
   query,
   where,
+  addDoc,
 } from "firebase/firestore";
 import {
   Fab,
@@ -34,8 +34,6 @@ import {
   Divider,
   Select,
   HStack,
-  Menu,
-  SearchIcon,
 } from "native-base";
 import { Ionicons, AntDesign } from "@expo/vector-icons";
 
@@ -52,11 +50,6 @@ const SelectedScreen = ({ route, navigation }) => {
   const toggleModal = () => {
     setShowModal(!showModal);
   };
-
-  /* task data */
-  const [taskTitle, setTaskTitle] = useState("");
-  const [taskDescription, setTaskDescription] = useState("");
-  const [taskDeadline, setTaskDeadline] = useState("");
 
   /* firebase query - all tasks */
   const collectionRef = collection(db, "Lists", listId, "tasks");
@@ -75,9 +68,10 @@ const SelectedScreen = ({ route, navigation }) => {
   );
 
   /* getTask from firebase db */
-  const getTasks = async () => {
+  const getTasks = async (filter) => {
+    filter = filter ?? filterValue;
     let data;
-    data = await getDocs(filterValue);
+    data = await getDocs(filter);
     data = data.docs.map((doc) => ({ ...doc.data(), id: doc.id }));
     setTasks(data);
   };
@@ -103,37 +97,30 @@ const SelectedScreen = ({ route, navigation }) => {
     return new Promise((resolve) => setTimeout(resolve, timeout));
   };
 
-  const onRefresh = useCallback(async () => {
+  const onRefresh = useCallback(async (filter) => {
     setRefreshing(true);
-    await getTasks(filterValue);
+    await getTasks(filter);
     wait(500).then(() => setRefreshing(false));
   }, []);
 
   /* addTask to firebase db */
   const handleAddTask = () => {
-    const myDoc = doc(db, "Lists", listId, "tasks", taskTitle);
-
-    const docData = {
-      task_deadline: taskDeadline,
-      task_description: taskDescription,
+    addDoc(collection(db, "Lists", listId, "tasks"), {
+      task_deadline: formData.deadline,
+      task_description: formData.description,
       task_isCompleted: false,
-      task_title: taskTitle,
-    };
-
-    setDoc(myDoc, docData)
+      task_title: formData.title,
+    })
       .then(() => {
         Toast.show({ title: "Úloha vytvorená!" });
+        setShowModal(false);
+        onRefresh(filterValue);
+        setData("");
+        tasks.length + 1;
       })
       .catch((error) => {
         Toast.show({ title: error.message });
       });
-
-    setShowModal(false);
-    setTaskTitle("");
-    setTaskDescription("");
-    setTaskDeadline("");
-    onRefresh();
-    tasks.length + 1;
   };
 
   /* searchBar */
@@ -155,7 +142,6 @@ const SelectedScreen = ({ route, navigation }) => {
       setErrors({ ...errors, title: "Názov je príliš krátky" });
       return false;
     }
-    setTaskTitle(formData.title);
     return true;
   };
 
@@ -167,7 +153,6 @@ const SelectedScreen = ({ route, navigation }) => {
       setErrors({ ...errors, description: "Popis je príliš krátky" });
       return false;
     }
-    setTaskDescription(formData.description);
     return true;
   };
   const validateDeadline = () => {
@@ -175,21 +160,17 @@ const SelectedScreen = ({ route, navigation }) => {
       setErrors({ ...errors, deadline: "Dátum je povinný" });
       return false;
     }
-    setTaskDeadline(formData.deadline);
     return true;
   };
 
   const onSubmit = () => {
     validateTitle() && validateDescription() && validateDeadline()
-      ? [setErrors({}), handleAddTask(), setShowModal(false), onRefresh()]
+      ? [setErrors({}), handleAddTask()]
       : console.log("Chyba");
-    setData("");
   };
 
   useEffect(() => {
     getTasks(filterValue);
-    /* console.log("UseEffect: " + filterValue.myQueryCompleted);
-    console.log(`UseEffect: ${filterValue.myQueryCompleted}`); */
 
     /* REALTIME DATA */
     /* 
@@ -275,29 +256,33 @@ const SelectedScreen = ({ route, navigation }) => {
 
         <ScrollView
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={() => onRefresh(filterValue)}
+            />
           }
         >
           <View style={styles.buttonContainer}>
             {tasks
               .sort(function (a, b) {
-                if (a.title > b.title) return 1;
-                if (a.title < b.title) return -1;
+                if (a.task_title > b.task_title) return 1;
+                if (a.task_title < b.task_title) return -1;
                 return 0;
               })
               .filter((task) =>
                 task.task_title.toLowerCase().includes(search.toLowerCase())
               )
-              .map((task, key) => {
+              .map((task) => {
                 return (
                   <Task
                     title={task.task_title}
                     text={task.task_description}
                     time={task.task_deadline}
                     isCompleted={task.task_isCompleted}
-                    key={key}
+                    key={task.id}
+                    id={task.id}
                     listId={listId}
-                    onRefresh={onRefresh}
+                    onRefresh={() => onRefresh(filterValue)}
                   />
                 );
               })}

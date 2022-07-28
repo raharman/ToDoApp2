@@ -16,10 +16,9 @@ import { doc, deleteDoc, setDoc } from "firebase/firestore";
 
 const Task = (props) => {
   function handleDeletion() {
-    deleteDoc(doc(db, "Lists", props.listId, "tasks", props.title))
+    deleteDoc(doc(db, "Lists", props.listId, "tasks", props.id))
       .then(() => {
         props.onRefresh();
-        Toast.show({ title: "Úloha odstránená!" });
       })
       .catch((error) => {
         Toast.show({ title: error.message });
@@ -27,12 +26,11 @@ const Task = (props) => {
   }
 
   function handleUpdate(value, merge) {
-    const docRef = doc(db, "Lists", props.listId, "tasks", props.title);
+    const docRef = doc(db, "Lists", props.listId, "tasks", props.id);
 
     setDoc(docRef, value, { merge: merge })
       .then(() => {
         props.onRefresh();
-        Toast.show({ title: "Úloha aktualizovaná!" });
       })
       .catch((error) => {
         Toast.show({ title: error.message });
