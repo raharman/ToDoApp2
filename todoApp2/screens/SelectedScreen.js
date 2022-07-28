@@ -4,7 +4,6 @@ import {
   View,
   ScrollView,
   RefreshControl,
-  TextInput,
 } from "react-native";
 import React, { useState, useEffect, useCallback } from "react";
 import Task from "../components/Task";
@@ -29,13 +28,14 @@ import {
   Button,
   AddIcon,
   CheckIcon,
-  WarningOutlineIcon,
   Toast,
   Modal,
   VStack,
   Divider,
   Select,
   HStack,
+  Menu,
+  SearchIcon,
 } from "native-base";
 import { Ionicons, AntDesign } from "@expo/vector-icons";
 
@@ -74,27 +74,26 @@ const SelectedScreen = ({ route, navigation }) => {
     where("task_isCompleted", "==", true)
   );
 
-  /* filter state */
-  const [filterValue, setFilterValue] = useState(queryAll);
-
-  /* update filter */
-  const updateFilter = (value) => {
-    if (value == "queryActive") {
-      setFilterValue(queryActive);
-    } else if (value == "queryCompleted") {
-      setFilterValue(queryCompleted);
-    } else {
-      setFilterValue(queryAll);
-    }
-    getTasks(filterValue);
-  };
-
   /* getTask from firebase db */
   const getTasks = async () => {
     let data;
     data = await getDocs(filterValue);
     data = data.docs.map((doc) => ({ ...doc.data(), id: doc.id }));
     setTasks(data);
+  };
+
+  /* filter state */
+  const [filterValue, setFilterValue] = useState(queryAll);
+
+  /* update filter */
+  const updateFilter = (value) => {
+    if (value === "queryActive") {
+      setFilterValue(queryActive);
+    } else if (value === "queryCompleted") {
+      setFilterValue(queryCompleted);
+    } else {
+      setFilterValue(queryAll);
+    }
   };
 
   /* refresh */
@@ -104,9 +103,9 @@ const SelectedScreen = ({ route, navigation }) => {
     return new Promise((resolve) => setTimeout(resolve, timeout));
   };
 
-  const onRefresh = useCallback(() => {
+  const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    getTasks(filterValue);
+    await getTasks(filterValue);
     wait(500).then(() => setRefreshing(false));
   }, []);
 
@@ -189,6 +188,8 @@ const SelectedScreen = ({ route, navigation }) => {
 
   useEffect(() => {
     getTasks(filterValue);
+    /* console.log("UseEffect: " + filterValue.myQueryCompleted);
+    console.log(`UseEffect: ${filterValue.myQueryCompleted}`); */
 
     /* REALTIME DATA */
     /* 
@@ -197,7 +198,7 @@ const SelectedScreen = ({ route, navigation }) => {
           tasks.push(doc.data());
         });
       }); 
-      */
+    */
 
     navigation.setOptions({
       title: title,
@@ -205,7 +206,7 @@ const SelectedScreen = ({ route, navigation }) => {
         borderBottomWidth: 0,
       },
     });
-  }, []);
+  }, [filterValue]);
 
   if (tasks.length > 0) {
     /* task render */
@@ -255,6 +256,7 @@ const SelectedScreen = ({ route, navigation }) => {
             px="3"
             width={125}
             minWidth="1"
+            defaultValue={queryAll}
             accessibilityLabel="SelectFilter"
             placeholder={
               queryAll ? "Všetky" : queryActive ? "Aktívne" : "Dokončené"
@@ -459,7 +461,6 @@ const SelectedScreen = ({ route, navigation }) => {
             py="3"
             px="3"
             width={125}
-            defaultValue={queryAll}
             minWidth="1"
             accessibilityLabel="SelectFilter"
             placeholder={

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import { View, StyleSheet, TouchableOpacity } from "react-native";
 import {
   NativeBaseProvider,
@@ -9,15 +9,12 @@ import {
   Toast,
 } from "native-base";
 import { db } from "../firebase";
-import { doc, deleteDoc, getDoc, setDoc } from "firebase/firestore";
-import { useNavigation } from "@react-navigation/native";
+import { doc, deleteDoc, setDoc } from "firebase/firestore";
 
 /* Timestamp converter */
 /* import moment from "moment-timezone"; */
 
 const Task = (props) => {
-  const navigation = useNavigation();
-
   function handleDeletion() {
     deleteDoc(doc(db, "Lists", props.listId, "tasks", props.title))
       .then(() => {
